@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# Face database (optional - remove if you want to include sample photos)
+# face_database/*.jpg
+# face_database/*.jpeg
+# face_database/*.png
+
+# Attendance logs (optional - remove if you want to keep logs in repo)
+attendance_logs/*.csv
+
+# Pickle files (will be regenerated)
+face_database/*.pkl

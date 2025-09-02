@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px auto;
+            padding: 30px;
+        }
+        
+        .video-container {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: #000;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #videoStream {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            object-fit: cover;
+        }
+        
+        .no-video {
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .btn-custom {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            border: none;
+            margin: 5px;
+        }
+        
+        .btn-start {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .btn-stop {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+            color: white;
+        }
+        
+        .btn-add {
+            background: linear-gradient(45deg, #007bff, #6610f2);
+            color: white;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .student-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .student-item {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-left: 4px solid #28a745;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .student-item.absent {
+            border-left-color: #dc3545;
+            opacity: 0.7;
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        #cameraPreview {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            background: #000;
+        }
+        
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="main-container">
+                    <div class="text-center mb-4">
+                        <h1 class="display-4 fw-bold text-primary">
+                            <i class="fas fa-camera me-3"></i>
+                            Face Recognition Attendance
+                        </h1>
+                        <p class="lead text-muted">Smart Attendance Management System</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="video-container">
+                                <img id="videoStream" src="" alt="Video Stream" style="display: none;">
+                                <div id="noVideo" class="no-video">
+                                    <i class="fas fa-video-slash fa-3x mb-3"></i>
+                                    <p>Camera is off. Click "Start Camera" to begin attendance tracking.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="control-panel">
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <button id="startCamera" class="btn btn-custom btn-start w-100">
+                                            <i class="fas fa-play me-2"></i>Start Camera
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button id="stopCamera" class="btn btn-custom btn-stop w-100" disabled>
+                                            <i class="fas fa-stop me-2"></i>Stop Camera
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button id="addStudent" class="btn btn-custom btn-add w-100" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                            <i class="fas fa-user-plus me-2"></i>Add Student
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <button id="resetAttendance" class="btn btn-outline-warning w-100">
+                                            <i class="fas fa-redo me-2"></i>Reset Today's Attendance
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button id="refreshStats" class="btn btn-outline-info w-100">
+                                            <i class="fas fa-sync me-2"></i>Refresh Stats
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <div class="row">
+                                <div class="col-6 col-lg-12">
+                                    <div class="stats-card">
+                                        <div class="stats-number" id="totalStudents">0</div>
+                                        <div class="stats-label">Total Students</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-lg-12">
+                                    <div class="stats-card">
+                                        <div class="stats-number" id="presentCount">0</div>
+                                        <div class="stats-label">Present Today</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-users me-2"></i>Attendance Status
+                                </h5>
+                                
+                                <ul class="nav nav-tabs" id="attendanceTab">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" data-bs-toggle="tab" href="#present">
+                                            <i class="fas fa-check-circle text-success me-1"></i>Present
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#absent">
+                                            <i class="fas fa-times-circle text-danger me-1"></i>Absent
+                                        </a>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content mt-3">
+                                    <div class="tab-pane fade show active" id="present">
+                                        <div class="student-list" id="presentList">
+                                            <p class="text-muted text-center">No students present yet</p>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="absent">
+                                        <div class="student-list" id="absentList">
+                                            <p class="text-muted text-center">Loading...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus me-2"></i>Add New Student
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addStudentForm">
+                        <div class="mb-3">
+                            <label for="studentName" class="form-label">Student Name</label>
+                            <input type="text" class="form-control" id="studentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Capture Photo</label>
+                            <div class="text-center">
+                                <video id="cameraPreview" autoplay style="display: none;"></video>
+                                <canvas id="photoCanvas" style="display: none;"></canvas>
+                                <div id="captureArea">
+                                    <button type="button" id="startCapture" class="btn btn-outline-primary">
+                                        <i class="fas fa-camera me-2"></i>Start Camera
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3" id="captureControls" style="display: none;">
+                            <div class="text-center">
+                                <button type="button" id="capturePhoto" class="btn btn-success me-2">
+                                    <i class="fas fa-camera me-2"></i>Capture Photo
+                                </button>
+                                <button type="button" id="retakePhoto" class="btn btn-warning">
+                                    <i class="fas fa-redo me-2"></i>Retake
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="saveStudent" class="btn btn-primary" disabled>
+                        <i class="fas fa-save me-2"></i>Save Student
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let cameraActive = false;
+        let captureStream = null;
+        let capturedImage = null;
+
+        // DOM Elements
+        const videoStream = document.getElementById('videoStream');
+        const noVideo = document.getElementById('noVideo');
+        const startCameraBtn = document.getElementById('startCamera');
+        const stopCameraBtn = document.getElementById('stopCamera');
+        const addStudentBtn = document.getElementById('addStudent');
+        const resetAttendanceBtn = document.getElementById('resetAttendance');
+        const refreshStatsBtn = document.getElementById('refreshStats');
+        
+        // Stats elements
+        const totalStudentsEl = document.getElementById('totalStudents');
+        const presentCountEl = document.getElementById('presentCount');
+        const presentListEl = document.getElementById('presentList');
+        const absentListEl = document.getElementById('absentList');
+
+        // Modal elements
+        const cameraPreview = document.getElementById('cameraPreview');
+        const startCaptureBtn = document.getElementById('startCapture');
+        const capturePhotoBtn = document.getElementById('capturePhoto');
+        const retakePhotoBtn = document.getElementById('retakePhoto');
+        const saveStudentBtn = document.getElementById('saveStudent');
+        const studentNameInput = document.getElementById('studentName');
+
+        // Event Listeners
+        startCameraBtn.addEventListener('click', startCamera);
+        stopCameraBtn.addEventListener('click', stopCamera);
+        resetAttendanceBtn.addEventListener('click', resetAttendance);
+        refreshStatsBtn.addEventListener('click', refreshStats);
+        
+        startCaptureBtn.addEventListener('click', startCapture);
+        capturePhotoBtn.addEventListener('click', capturePhoto);
+        retakePhotoBtn.addEventListener('click', retakePhoto);
+        saveStudentBtn.addEventListener('click', saveStudent);
+
+        // Functions
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-custom`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.getElementById('alertContainer').appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        async function startCamera() {
+            try {
+                const response = await fetch('/start_camera', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    cameraActive = true;
+                    videoStream.src = '/video_feed';
+                    videoStream.style.display = 'block';
+                    noVideo.style.display = 'none';
+                    startCameraBtn.disabled = true;
+                    stopCameraBtn.disabled = false;
+                    showAlert('Camera started successfully!', 'success');
+                    refreshStats();
+                }
+            } catch (error) {
+                showAlert('Error starting camera: ' + error.message, 'danger');
+            }
+        }
+
+        async function stopCamera() {
+            try {
+                const response = await fetch('/stop_camera', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    cameraActive = false;
+                    videoStream.style.display = 'none';
+                    noVideo.style.display = 'block';
+                    startCameraBtn.disabled = false;
+                    stopCameraBtn.disabled = true;
+                    showAlert('Camera stopped successfully!', 'warning');
+                }
+            } catch (error) {
+                showAlert('Error stopping camera: ' + error.message, 'danger');
+            }
+        }
+
+        async function refreshStats() {
+            try {
+                const response = await fetch('/attendance_summary');
+                const data = await response.json();
+                
+                totalStudentsEl.textContent = data.total_students;
+                presentCountEl.textContent = data.present_count;
+                
+                // Update present list
+                if (data.present_students.length > 0) {
+                    presentListEl.innerHTML = data.present_students.map(student => 
+                        `<div class="student-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>${student}
+                        </div>`
+                    ).join('');
+                } else {
+                    presentListEl.innerHTML = '<p class="text-muted text-center">No students present yet</p>';
+                }
+                
+                // Update absent list
+                if (data.absent_students.length > 0) {
+                    absentListEl.innerHTML = data.absent_students.map(student => 
+                        `<div class="student-item absent">
+                            <i class="fas fa-times-circle text-danger me-2"></i>${student}
+                        </div>`
+                    ).join('');
+                } else {
+                    absentListEl.innerHTML = '<p class="text-muted text-center">All students are present!</p>';
+                }
+            } catch (error) {
+                showAlert('Error refreshing stats: ' + error.message, 'danger');
+            }
+        }
+
+        async function resetAttendance() {
+            if (confirm('Are you sure you want to reset today\'s attendance?')) {
+                try {
+                    const response = await fetch('/reset_attendance', { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        showAlert('Attendance reset successfully!', 'info');
+                        refreshStats();
+                    }
+                } catch (error) {
+                    showAlert('Error resetting attendance: ' + error.message, 'danger');
+                }
+            }
+        }
+
+        async function startCapture() {
+            try {
+                captureStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraPreview.srcObject = captureStream;
+                cameraPreview.style.display = 'block';
+                startCaptureBtn.style.display = 'none';
+                document.getElementById('captureControls').style.display = 'block';
+            } catch (error) {
+                showAlert('Error accessing camera: ' + error.message, 'danger');
+            }
+        }
+
+        function capturePhoto() {
+            const canvas = document.getElementById('photoCanvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = cameraPreview.videoWidth;
+            canvas.height = cameraPreview.videoHeight;
+            context.drawImage(cameraPreview, 0, 0);
+            
+            capturedImage = canvas.toDataURL('image/jpeg');
+            
+            // Stop the camera stream
+            if (captureStream) {
+                captureStream.getTracks().forEach(track => track.stop());
+            }
+            
+            cameraPreview.style.display = 'none';
+            document.getElementById('captureControls').style.display = 'none';
+            
+            // Show captured image
+            const img = document.createElement('img');
+            img.src = capturedImage;
+            img.className = 'img-fluid rounded';
+            img.style.maxHeight = '300px';
+            
+            const captureArea = document.getElementById('captureArea');
+            captureArea.innerHTML = '';
+            captureArea.appendChild(img);
+            
+            const retakeBtn = document.createElement('button');
+            retakeBtn.type = 'button';
+            retakeBtn.className = 'btn btn-warning mt-2';
+            retakeBtn.innerHTML = '<i class="fas fa-redo me-2"></i>Retake Photo';
+            retakeBtn.onclick = retakePhoto;
+            captureArea.appendChild(retakeBtn);
+            
+            saveStudentBtn.disabled = false;
+            showAlert('Photo captured successfully!', 'success');
+        }
+
+        function retakePhoto() {
+            capturedImage = null;
+            saveStudentBtn.disabled = true;
+            document.getElementById('captureArea').innerHTML = `
+                <button type="button" id="startCapture" class="btn btn-outline-primary">
+                    <i class="fas fa-camera me-2"></i>Start Camera
+                </button>
+            `;
+            document.getElementById('startCapture').addEventListener('click', startCapture);
+        }
+
+        async function saveStudent() {
+            const name = studentNameInput.value.trim();
+            
+            if (!name) {
+                showAlert('Please enter a student name', 'warning');
+                return;
+            }
+            
+            if (!capturedImage) {
+                showAlert('Please capture a photo first', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/add_student', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        image: capturedImage
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(data.message, 'success');
+                    
+                    // Reset form
+                    studentNameInput.value = '';
+                    retakePhoto();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
+                    modal.hide();
+                    
+                    refreshStats();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error adding student: ' + error.message, 'danger');
+            }
+        }
+
+        // Auto-refresh stats every 10 seconds when camera is active (reduced frequency)
+        setInterval(() => {
+            if (cameraActive) {
+                refreshStats();
+            }
+        }, 10000);
+
+        // Initial load
+        refreshStats();
+    </script>
+</body>
+</html>
