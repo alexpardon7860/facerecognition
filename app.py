@@ -1,6 +1,6 @@
 from flask import Flask, render_template, Response, jsonify, request, redirect, url_for
 import cv2
-import face_recognition
+from facerecognition_mediapipe import MediaPipeFaceRecognition
 import numpy as np
 import pandas as pd
 import os
@@ -19,9 +19,6 @@ class WebFaceRecognitionAttendance:
     def __init__(self, face_database_path="face_database", attendance_log_path="attendance_logs"):
         self.face_database_path = face_database_path
         self.attendance_log_path = attendance_log_path
-        self.pickle_file = os.path.join(face_database_path, "face_encodings.pkl")
-        self.known_face_encodings = []
-        self.known_face_names = []
         self.present_students = set()
         self.attendance_marked_today = set()
         self.camera_active = False
@@ -36,8 +33,8 @@ class WebFaceRecognitionAttendance:
         os.makedirs(face_database_path, exist_ok=True)
         os.makedirs(attendance_log_path, exist_ok=True)
         
-        # Load known faces
-        self.load_known_faces()
+        # Initialize MediaPipe face recognition
+        self.face_recognizer = MediaPipeFaceRecognition()
         
     def load_known_faces(self):
         """Load face encodings from pickle file or create new from images"""
@@ -61,14 +58,10 @@ class WebFaceRecognitionAttendance:
                 image_path = os.path.join(self.face_database_path, filename)
                 
                 try:
-                    image = face_recognition.load_image_file(image_path)
-                    face_encodings = face_recognition.face_encodings(image)
-                    
-                    if face_encodings:
-                        self.known_face_encodings.append(face_encodings[0])
-                        self.known_face_names.append(student_name)
+                    # MediaPipe handles face loading internally
+                    pass  # Face loading is handled by MediaPipeFaceRecognition
                 except Exception as e:
-                    print(f"Error processing {filename}: {str(e)}")
+                    print(f"Error processing {filename}: {e}")
         
         self.save_face_encodings()
     
@@ -127,27 +120,11 @@ class WebFaceRecognitionAttendance:
                 small_frame = cv2.resize(frame, (0, 0), fx=0.2, fy=0.2)
                 rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
                 
-                face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
+                # Use MediaPipe for face recognition
+                face_locations, face_names = self.face_recognizer.recognize_faces_in_frame(frame)
                 
-                if face_locations:  # Only process encodings if faces found
-                    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-                    
-                    for face_encoding in face_encodings:
-                        matches = face_recognition.compare_faces(
-                            self.known_face_encodings, face_encoding, tolerance=0.5
-                        )
-                        name = "Unknown"
-                        
-                        if len(self.known_face_encodings) > 0 and True in matches:
-                            face_distances = face_recognition.face_distance(
-                                self.known_face_encodings, face_encoding
-                            )
-                            best_match_index = np.argmin(face_distances)
-                            if matches[best_match_index] and face_distances[best_match_index] < 0.5:
-                                name = self.known_face_names[best_match_index]
-                                self.mark_attendance(name)
-                        
-                        face_names.append(name)
+                for face_location, name in zip(face_locations, face_names):
+                    self.mark_attendance(name)
             
             # Draw rectangles and labels (scale back up)
             for (top, right, bottom, left), name in zip(face_locations, face_names):
@@ -236,17 +213,16 @@ class WebFaceRecognitionAttendance:
             image_path = os.path.join(self.face_database_path, f"{name}.jpg")
             image.save(image_path)
             
-            # Process face encoding
-            face_image = face_recognition.load_image_file(image_path)
-            face_encodings = face_recognition.face_encodings(face_image)
+            # Process face with MediaPipe
+            image = cv2.imread(image_path)
+            face_encoding = self.face_recognizer.get_face_landmarks(image)
             
-            if not face_encodings:
+            if face_encoding is None:
                 os.remove(image_path)  # Remove invalid image
                 return False, "No face detected in image"
             
-            # Add to current arrays
-            self.known_face_encodings.append(face_encodings[0])
-            self.known_face_names.append(name)
+            # Reload face recognizer to include new face
+            self.face_recognizer = MediaPipeFaceRecognition()
             
             # Update pickle file
             self.save_face_encodings()
