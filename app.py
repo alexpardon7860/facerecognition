@@ -1,6 +1,6 @@
 from flask import Flask, render_template, Response, jsonify, request, redirect, url_for
 import cv2
-from facerecognition_mediapipe import MediaPipeFaceRecognition
+from facerecognition_opencv import OpenCVFaceRecognition
 import numpy as np
 import pandas as pd
 import os
@@ -33,8 +33,8 @@ class WebFaceRecognitionAttendance:
         os.makedirs(face_database_path, exist_ok=True)
         os.makedirs(attendance_log_path, exist_ok=True)
         
-        # Initialize MediaPipe face recognition
-        self.face_recognizer = MediaPipeFaceRecognition()
+        # Initialize OpenCV face recognition
+        self.face_recognizer = OpenCVFaceRecognition()
         
     def load_known_faces(self):
         """Load face encodings from pickle file or create new from images"""
@@ -222,7 +222,7 @@ class WebFaceRecognitionAttendance:
                 return False, "No face detected in image"
             
             # Reload face recognizer to include new face
-            self.face_recognizer = MediaPipeFaceRecognition()
+            self.face_recognizer = OpenCVFaceRecognition()
             
             # Update pickle file
             self.save_face_encodings()
