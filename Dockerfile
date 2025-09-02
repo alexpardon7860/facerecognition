@@ -1,29 +1,16 @@
-FROM python:3.9-slim
+FROM python:3.9
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libx11-6 \
-    libxext6 \
-    libxrender1 \
-    libxtst6 \
-    libxi6 \
+    libgl1-mesa-glx \
     libglib2.0-0 \
-    libgtk-3-0 \
     libsm6 \
-    libice6 \
-    libxrandr2 \
-    libxss1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libcairo-gobject2 \
-    libgdk-pixbuf2.0-0 \
-    libpango-1.0-0 \
-    libharfbuzz0b \
-    libfontconfig1 \
-    libfreetype6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
     build-essential \
     cmake \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
