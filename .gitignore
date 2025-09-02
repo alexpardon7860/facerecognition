@@ -51,3 +51,6 @@ attendance_logs/*.csv
 
 # Pickle files (will be regenerated)
 face_database/*.pkl
+
+# Allow build folder for Netlify
+!build/
